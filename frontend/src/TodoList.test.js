@@ -1,9 +1,10 @@
+// frontend/src/TodoList.test.js
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import '@testing-library/jest-dom';  // ← AJOUTER CETTE LIGNE
+import '@testing-library/jest-dom';
 import TodoList from './TodoList';
 import * as api from './api';
 
-jest.mock('./api');
+jest.mock('./api'); // Mock is set up here
 
 const mockTodos = [
   { id: 1, title: 'Test Todo 1', description: 'Desc 1', completed: false, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
@@ -12,6 +13,10 @@ const mockTodos = [
 
 describe('TodoList', () => {
   beforeEach(() => {
+    // Clear all mocks before each test
+    jest.clearAllMocks();
+    
+    // Set up mocks BEFORE rendering
     api.getTodos.mockResolvedValue(mockTodos);
     api.createTodo.mockResolvedValue({ id: 3, title: 'New Todo', description: null, completed: false, created_at: new Date().toISOString(), updated_at: new Date().toISOString() });
     api.toggleTodo.mockImplementation((id) => {

@@ -1,13 +1,30 @@
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from app.main import app
 from app.database import get_db, Base
 
 import os
+import time
+
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://testuser:testpass@localhost:5432/testdb")
-engine = create_engine(DATABASE_URL)
+
+# Retry logic to wait for database to be ready
+def wait_for_db(url, max_retries=30):
+    engine = create_engine(url)
+    for attempt in range(max_retries):
+        try:
+            with engine.connect() as conn:
+                conn.execute(text("SELECT 1"))
+            return engine
+        except Exception as e:
+            if attempt < max_retries - 1:
+                time.sleep(1)
+            else:
+                raise
+
+engine = wait_for_db(DATABASE_URL)
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 def override_get_db():
@@ -25,6 +42,7 @@ def setup_database():
     Base.metadata.create_all(bind=engine)
     yield
     Base.metadata.drop_all(bind=engine)
+
 
 class TestIntegrationWorkflow:
     def test_complete_crud_workflow(self):
@@ -86,3 +104,7 @@ class TestIntegrationWorkflow:
         # 422 on invalid data
         response = client.post("/todos", json={})
         assert response.status_code == 422
+
+
+
+        
