@@ -1,4 +1,5 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import '@testing-library/jest-dom';  // ← AJOUTER CETTE LIGNE
 import TodoList from './TodoList';
 import * as api from './api';
 
