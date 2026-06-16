@@ -4,7 +4,8 @@ import '@testing-library/jest-dom';
 import TodoList from './TodoList';
 import * as api from './api';
 
-jest.mock('./api'); // Mock is set up here
+// Mock BEFORE any imports that use it
+jest.mock('./api');
 
 const mockTodos = [
   { id: 1, title: 'Test Todo 1', description: 'Desc 1', completed: false, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
@@ -13,12 +14,19 @@ const mockTodos = [
 
 describe('TodoList', () => {
   beforeEach(() => {
-    // Clear all mocks before each test
-    jest.clearAllMocks();
+    // Reset all mocks
+    jest.resetAllMocks();
     
-    // Set up mocks BEFORE rendering
+    // Configure all mocks BEFORE rendering
     api.getTodos.mockResolvedValue(mockTodos);
-    api.createTodo.mockResolvedValue({ id: 3, title: 'New Todo', description: null, completed: false, created_at: new Date().toISOString(), updated_at: new Date().toISOString() });
+    api.createTodo.mockResolvedValue({ 
+      id: 3, 
+      title: 'New Todo', 
+      description: null, 
+      completed: false, 
+      created_at: new Date().toISOString(), 
+      updated_at: new Date().toISOString() 
+    });
     api.toggleTodo.mockImplementation((id) => {
       const todo = mockTodos.find(t => t.id === id);
       return Promise.resolve({ ...todo, completed: !todo.completed });
@@ -50,7 +58,10 @@ describe('TodoList', () => {
     fireEvent.click(button);
 
     await waitFor(() => {
-      expect(api.createTodo).toHaveBeenCalled();
+      expect(api.createTodo).toHaveBeenCalledWith({
+        title: 'New Todo',
+        description: null
+      });
     });
   });
 

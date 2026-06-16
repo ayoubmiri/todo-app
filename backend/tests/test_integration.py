@@ -27,6 +27,9 @@ def wait_for_db(url, max_retries=30):
 engine = wait_for_db(DATABASE_URL)
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
+# CREATE TABLES IMMEDIATELY AFTER ENGINE SETUP
+Base.metadata.create_all(bind=engine)
+
 def override_get_db():
     try:
         db = TestingSessionLocal()
@@ -39,6 +42,8 @@ client = TestClient(app)
 
 @pytest.fixture(autouse=True)
 def setup_database():
+    # Clear data between tests
+    Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
     yield
     Base.metadata.drop_all(bind=engine)
