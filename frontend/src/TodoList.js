@@ -1,0 +1,315 @@
+import React, { useState, useEffect } from 'react';
+import { getTodos, createTodo, updateTodo, deleteTodo, toggleTodo } from './api';
+
+function TodoList() {
+  const [todos, setTodos] = useState([]);
+  const [newTitle, setNewTitle] = useState('');
+  const [newDescription, setNewDescription] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [editingId, setEditingId] = useState(null);
+  const [editTitle, setEditTitle] = useState('');
+
+  useEffect(() => {
+    fetchTodos();
+  }, []);
+
+  const fetchTodos = async () => {
+    try {
+      setLoading(true);
+      const data = await getTodos();
+      setTodos(data);
+      setError(null);
+    } catch (err) {
+      setError('Failed to fetch todos');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateTodo = async (e) => {
+    e.preventDefault();
+    if (!newTitle.trim()) return;
+
+    try {
+      const newTodo = await createTodo({
+        title: newTitle,
+        description: newDescription || null,
+      });
+      setTodos([...todos, newTodo]);
+      setNewTitle('');
+      setNewDescription('');
+    } catch (err) {
+      setError('Failed to create todo');
+      console.error(err);
+    }
+  };
+
+  const handleToggleTodo = async (id) => {
+    try {
+      const updatedTodo = await toggleTodo(id);
+      setTodos(todos.map(todo => todo.id === id ? updatedTodo : todo));
+    } catch (err) {
+      setError('Failed to toggle todo');
+      console.error(err);
+    }
+  };
+
+  const handleDeleteTodo = async (id) => {
+    try {
+      await deleteTodo(id);
+      setTodos(todos.filter(todo => todo.id !== id));
+    } catch (err) {
+      setError('Failed to delete todo');
+      console.error(err);
+    }
+  };
+
+  const handleStartEdit = (todo) => {
+    setEditingId(todo.id);
+    setEditTitle(todo.title);
+  };
+
+  const handleUpdateTodo = async (id) => {
+    if (!editTitle.trim()) return;
+
+    try {
+      const updatedTodo = await updateTodo(id, { title: editTitle });
+      setTodos(todos.map(todo => todo.id === id ? updatedTodo : todo));
+      setEditingId(null);
+      setEditTitle('');
+    } catch (err) {
+      setError('Failed to update todo');
+      console.error(err);
+    }
+  };
+
+  if (loading) return <div style={styles.loading}>Loading...</div>;
+
+  return (
+    <div style={styles.container}>
+      <h1 style={styles.title}>📝 Todo List</h1>
+      
+      {error && (
+        <div style={styles.error}>
+          ❌ Error: {error}
+        </div>
+      )}
+
+      <form onSubmit={handleCreateTodo} style={styles.form}>
+        <input
+          type="text"
+          placeholder="What needs to be done?"
+          value={newTitle}
+          onChange={(e) => setNewTitle(e.target.value)}
+          style={styles.input}
+        />
+        <input
+          type="text"
+          placeholder="Description (optional)"
+          value={newDescription}
+          onChange={(e) => setNewDescription(e.target.value)}
+          style={styles.input}
+        />
+        <button type="submit" style={styles.button}>
+          ➕ Add Todo
+        </button>
+      </form>
+
+      <ul style={styles.list}>
+        {todos.map(todo => (
+          <li key={todo.id} style={styles.listItem}>
+            {editingId === todo.id ? (
+              <div style={styles.editContainer}>
+                <input
+                  type="text"
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  style={styles.editInput}
+                />
+                <button onClick={() => handleUpdateTodo(todo.id)} style={styles.saveButton}>
+                  💾 Save
+                </button>
+                <button onClick={() => setEditingId(null)} style={styles.cancelButton}>
+                  ❌ Cancel
+                </button>
+              </div>
+            ) : (
+              <div style={styles.todoContent}>
+                <input
+                  type="checkbox"
+                  checked={todo.completed}
+                  onChange={() => handleToggleTodo(todo.id)}
+                  style={styles.checkbox}
+                />
+                <div style={styles.todoText}>
+                  <span style={{
+                    textDecoration: todo.completed ? 'line-through' : 'none',
+                    fontSize: '18px',
+                    fontWeight: 'bold'
+                  }}>
+                    {todo.title}
+                  </span>
+                  {todo.description && (
+                    <span style={{
+                      color: '#666',
+                      fontSize: '14px',
+                      marginTop: '5px'
+                    }}>
+                      {todo.description}
+                    </span>
+                  )}
+                </div>
+                <div>
+                  <button onClick={() => handleStartEdit(todo)} style={styles.editButton}>
+                    ✏️ Edit
+                  </button>
+                  <button onClick={() => handleDeleteTodo(todo.id)} style={styles.deleteButton}>
+                    🗑️ Delete
+                  </button>
+                </div>
+              </div>
+            )}
+          </li>
+        ))}
+      </ul>
+
+      {todos.length === 0 && !loading && (
+        <div style={styles.empty}>
+          🎉 No todos yet! Add one above.
+        </div>
+      )}
+    </div>
+  );
+}
+
+const styles = {
+  container: {
+    maxWidth: '700px',
+    margin: '0 auto',
+    padding: '20px',
+    backgroundColor: 'white',
+    borderRadius: '10px',
+    boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+  },
+  title: {
+    textAlign: 'center',
+    color: '#333',
+    marginBottom: '30px',
+  },
+  loading: {
+    textAlign: 'center',
+    fontSize: '20px',
+    color: 'white',
+    marginTop: '50px',
+  },
+  error: {
+    backgroundColor: '#fee',
+    color: '#c33',
+    padding: '10px',
+    borderRadius: '5px',
+    marginBottom: '20px',
+    textAlign: 'center',
+  },
+  form: {
+    display: 'flex',
+    gap: '10px',
+    marginBottom: '30px',
+    flexWrap: 'wrap',
+  },
+  input: {
+    flex: 1,
+    padding: '10px',
+    border: '1px solid #ddd',
+    borderRadius: '5px',
+    fontSize: '16px',
+  },
+  button: {
+    padding: '10px 20px',
+    backgroundColor: '#667eea',
+    color: 'white',
+    border: 'none',
+    borderRadius: '5px',
+    cursor: 'pointer',
+    fontSize: '16px',
+  },
+  list: {
+    listStyle: 'none',
+    padding: 0,
+  },
+  listItem: {
+    backgroundColor: '#f9f9f9',
+    marginBottom: '10px',
+    padding: '15px',
+    borderRadius: '5px',
+    transition: 'all 0.3s',
+  },
+  todoContent: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '15px',
+    flexWrap: 'wrap',
+  },
+  checkbox: {
+    width: '20px',
+    height: '20px',
+    cursor: 'pointer',
+  },
+  todoText: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  editButton: {
+    padding: '5px 10px',
+    backgroundColor: '#ffc107',
+    color: 'white',
+    border: 'none',
+    borderRadius: '3px',
+    cursor: 'pointer',
+    marginRight: '5px',
+  },
+  deleteButton: {
+    padding: '5px 10px',
+    backgroundColor: '#dc3545',
+    color: 'white',
+    border: 'none',
+    borderRadius: '3px',
+    cursor: 'pointer',
+  },
+  editContainer: {
+    display: 'flex',
+    gap: '10px',
+  },
+  editInput: {
+    flex: 1,
+    padding: '8px',
+    border: '1px solid #ddd',
+    borderRadius: '3px',
+  },
+  saveButton: {
+    padding: '5px 10px',
+    backgroundColor: '#28a745',
+    color: 'white',
+    border: 'none',
+    borderRadius: '3px',
+    cursor: 'pointer',
+  },
+  cancelButton: {
+    padding: '5px 10px',
+    backgroundColor: '#6c757d',
+    color: 'white',
+    border: 'none',
+    borderRadius: '3px',
+    cursor: 'pointer',
+  },
+  empty: {
+    textAlign: 'center',
+    padding: '40px',
+    color: '#999',
+    fontSize: '18px',
+  },
+};
+
+export default TodoList;
