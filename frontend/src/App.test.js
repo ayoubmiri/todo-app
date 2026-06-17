@@ -17,13 +17,13 @@ import * as api from './api';
 test('renders todo list', async () => {
   render(<App />);
   
-  // Wait for loading to finish and component to render
+  // Wait for loading to finish
   await waitFor(() => {
-    expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('loading')).not.toBeInTheDocument();
   });
   
   // Now check for the title
-  const title = await screen.findByText(/Todo List/i);
+  const title = screen.getByText(/Todo List/i);
   expect(title).toBeInTheDocument();
   
   // Verify the API was called
@@ -32,5 +32,5 @@ test('renders todo list', async () => {
 
 test('shows loading state initially', () => {
   render(<App />);
-  expect(screen.getByText('Loading...')).toBeInTheDocument();
+  expect(screen.getByTestId('loading...')).toBeInTheDocument();
 });

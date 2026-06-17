@@ -3,7 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { getTodos, createTodo, updateTodo, deleteTodo, toggleTodo } from './api';
 
 function TodoList() {
-  const [todos, setTodos] = useState([]); // Fixed: initialized as empty array
+  // IMPORTANT: This MUST be initialized with an empty array []
+  const [todos, setTodos] = useState([]);  // <-- Make sure this is []
   const [newTitle, setNewTitle] = useState('');
   const [newDescription, setNewDescription] = useState('');
   const [loading, setLoading] = useState(true);
@@ -19,13 +20,14 @@ function TodoList() {
     try {
       setLoading(true);
       const data = await getTodos();
-      setTodos(data);
+      setTodos(data || []); // Fallback to empty array if data is undefined
       setError(null);
     } catch (err) {
       setError('Failed to fetch todos');
       if (process.env.NODE_ENV !== 'test') {
         console.error(err);
       }
+      setTodos([]); // Set to empty array on error
     } finally {
       setLoading(false);
     }
@@ -131,7 +133,7 @@ function TodoList() {
       </form>
 
       <ul style={styles.list} data-testid="todo-list">
-        {todos.map(todo => (
+        {todos && todos.map(todo => (  // Add safety check
           <li key={todo.id} style={styles.listItem} data-testid={`todo-item-${todo.id}`}>
             {editingId === todo.id ? (
               <div style={styles.editContainer} data-testid={`edit-container-${todo.id}`}>
@@ -206,7 +208,7 @@ function TodoList() {
         ))}
       </ul>
 
-      {todos.length === 0 && !loading && (
+      {(!todos || todos.length === 0) && !loading && (
         <div style={styles.empty} data-testid="empty-state">
           🎉 No todos yet! Add one above.
         </div>
