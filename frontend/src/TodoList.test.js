@@ -29,14 +29,12 @@ describe('TodoList', () => {
   test('displays todos after loading', async () => {
     render(<TodoList />);
     
-    // Wait for loading to finish
-    await waitFor(() => {
-      expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
-    });
+    // Use findByText which automatically waits
+    const todo1 = await screen.findByText('Test Todo 1');
+    const todo2 = await screen.findByText('Test Todo 2');
     
-    // Check if todos are displayed
-    expect(screen.getByText('Test Todo 1')).toBeInTheDocument();
-    expect(screen.getByText('Test Todo 2')).toBeInTheDocument();
+    expect(todo1).toBeInTheDocument();
+    expect(todo2).toBeInTheDocument();
     expect(screen.getByText('Desc 1')).toBeInTheDocument();
     expect(screen.getByText('Desc 2')).toBeInTheDocument();
   });
@@ -44,9 +42,8 @@ describe('TodoList', () => {
   test('creates a new todo', async () => {
     render(<TodoList />);
     
-    await waitFor(() => {
-      expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
-    });
+    // Wait for loading to finish
+    await screen.findByText('Test Todo 1');
 
     // Find input and button
     const input = screen.getByPlaceholderText('What needs to be done?');
@@ -68,9 +65,7 @@ describe('TodoList', () => {
   test('deletes a todo', async () => {
     render(<TodoList />);
     
-    await waitFor(() => {
-      expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
-    });
+    await screen.findByText('Test Todo 1');
 
     // Find delete buttons
     const deleteButtons = screen.getAllByText(/Delete/i);
@@ -85,9 +80,7 @@ describe('TodoList', () => {
   test('toggles a todo', async () => {
     render(<TodoList />);
     
-    await waitFor(() => {
-      expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
-    });
+    await screen.findByText('Test Todo 1');
 
     // Find checkboxes
     const checkboxes = screen.getAllByRole('checkbox');

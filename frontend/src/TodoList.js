@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { getTodos, createTodo, updateTodo, deleteTodo, toggleTodo } from './api';
 
 function TodoList() {
-  const [todos, setTodos] = useState([]);
+  const [todos, setTodos] = useState([]); // Fixed: initialized as empty array
   const [newTitle, setNewTitle] = useState('');
   const [newDescription, setNewDescription] = useState('');
   const [loading, setLoading] = useState(true);
@@ -23,7 +23,6 @@ function TodoList() {
       setError(null);
     } catch (err) {
       setError('Failed to fetch todos');
-      // Don't log in test environment
       if (process.env.NODE_ENV !== 'test') {
         console.error(err);
       }
