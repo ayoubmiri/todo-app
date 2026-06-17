@@ -32,5 +32,5 @@ test('renders todo list', async () => {
 
 test('shows loading state initially', () => {
   render(<App />);
-  expect(screen.getByTestId('loading...')).toBeInTheDocument();
+  expect(screen.getByTestId('loading')).toBeInTheDocument();
 });
