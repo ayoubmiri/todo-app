@@ -1,3 +1,4 @@
+# backend/tests/test_unitaires.py
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -43,6 +44,8 @@ def test_create_todo():
     assert data["title"] == "Test Todo"
     assert data["completed"] == False
     assert "id" in data
+    assert "created_at" in data
+    assert "updated_at" in data
 
 def test_create_todo_with_description():
     response = client.post("/todos", json={
@@ -51,7 +54,9 @@ def test_create_todo_with_description():
     })
     assert response.status_code == 201
     data = response.json()
+    assert data["title"] == "Test Todo"
     assert data["description"] == "This is a test"
+    assert data["completed"] == False
 
 def test_get_empty_todos():
     response = client.get("/todos")
@@ -66,6 +71,8 @@ def test_get_todos():
     assert response.status_code == 200
     data = response.json()
     assert len(data) == 2
+    assert data[0]["title"] == "Todo 1"
+    assert data[1]["title"] == "Todo 2"
 
 def test_get_single_todo():
     create_response = client.post("/todos", json={"title": "Single Todo"})
@@ -74,10 +81,12 @@ def test_get_single_todo():
     response = client.get(f"/todos/{todo_id}")
     assert response.status_code == 200
     assert response.json()["title"] == "Single Todo"
+    assert response.json()["id"] == todo_id
 
 def test_get_nonexistent_todo():
     response = client.get("/todos/9999")
     assert response.status_code == 404
+    assert response.json() == {"detail": "Todo not found"}
 
 def test_update_todo():
     create_response = client.post("/todos", json={"title": "Old Title"})
@@ -86,6 +95,7 @@ def test_update_todo():
     response = client.put(f"/todos/{todo_id}", json={"title": "New Title"})
     assert response.status_code == 200
     assert response.json()["title"] == "New Title"
+    assert response.json()["id"] == todo_id
 
 def test_update_completed_status():
     create_response = client.post("/todos", json={"title": "Todo"})
@@ -94,6 +104,15 @@ def test_update_completed_status():
     response = client.put(f"/todos/{todo_id}", json={"completed": True})
     assert response.status_code == 200
     assert response.json()["completed"] == True
+    
+    # Verify the todo is still accessible
+    get_response = client.get(f"/todos/{todo_id}")
+    assert get_response.status_code == 200
+    assert get_response.json()["completed"] == True
+
+def test_update_nonexistent_todo():
+    response = client.put("/todos/9999", json={"title": "New Title"})
+    assert response.status_code == 404
 
 def test_delete_todo():
     create_response = client.post("/todos", json={"title": "To Delete"})
@@ -101,29 +120,62 @@ def test_delete_todo():
     
     response = client.delete(f"/todos/{todo_id}")
     assert response.status_code == 204
+    assert response.text == ""  # No content
     
     get_response = client.get(f"/todos/{todo_id}")
     assert get_response.status_code == 404
+
+def test_delete_nonexistent_todo():
+    response = client.delete("/todos/9999")
+    assert response.status_code == 404
 
 def test_toggle_complete():
     create_response = client.post("/todos", json={"title": "Toggle Todo"})
     todo_id = create_response.json()["id"]
     
+    # Toggle to complete
     response = client.patch(f"/todos/{todo_id}/toggle")
     assert response.status_code == 200
     assert response.json()["completed"] == True
     
+    # Toggle back to incomplete
     response = client.patch(f"/todos/{todo_id}/toggle")
     assert response.status_code == 200
     assert response.json()["completed"] == False
+
+def test_toggle_nonexistent_todo():
+    response = client.patch("/todos/9999/toggle")
+    assert response.status_code == 404
 
 @pytest.mark.parametrize("title", [
     "Simple todo",
     "Todo with spaces",
     "Todo with numbers 123",
-    "Todo with @special!chars"
+    "Todo with @special!chars",
+    "A" * 100,  # Long title
 ])
 def test_create_multiple_todos_parametrized(title):
     response = client.post("/todos", json={"title": title})
     assert response.status_code == 201
-    assert response.json()["title"] == title
+    data = response.json()
+    assert data["title"] == title
+    assert data["completed"] == False
+    assert "id" in data
+
+def test_create_todo_with_empty_title():
+    response = client.post("/todos", json={"title": ""})
+    assert response.status_code == 422  # Validation error
+
+def test_create_todo_with_missing_title():
+    response = client.post("/todos", json={})
+    assert response.status_code == 422  # Validation error
+
+def test_create_todo_with_extra_fields():
+    response = client.post("/todos", json={
+        "title": "Test",
+        "extra_field": "should be ignored"
+    })
+    assert response.status_code == 201
+    data = response.json()
+    assert data["title"] == "Test"
+    assert "extra_field" not in data
