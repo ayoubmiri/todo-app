@@ -1,3 +1,4 @@
+// frontend/src/TodoList.js
 import React, { useState, useEffect } from 'react';
 import { getTodos, createTodo, updateTodo, deleteTodo, toggleTodo } from './api';
 
@@ -22,7 +23,10 @@ function TodoList() {
       setError(null);
     } catch (err) {
       setError('Failed to fetch todos');
-      console.error(err);
+      // Don't log in test environment
+      if (process.env.NODE_ENV !== 'test') {
+        console.error(err);
+      }
     } finally {
       setLoading(false);
     }
@@ -42,7 +46,9 @@ function TodoList() {
       setNewDescription('');
     } catch (err) {
       setError('Failed to create todo');
-      console.error(err);
+      if (process.env.NODE_ENV !== 'test') {
+        console.error(err);
+      }
     }
   };
 
@@ -52,7 +58,9 @@ function TodoList() {
       setTodos(todos.map(todo => todo.id === id ? updatedTodo : todo));
     } catch (err) {
       setError('Failed to toggle todo');
-      console.error(err);
+      if (process.env.NODE_ENV !== 'test') {
+        console.error(err);
+      }
     }
   };
 
@@ -62,7 +70,9 @@ function TodoList() {
       setTodos(todos.filter(todo => todo.id !== id));
     } catch (err) {
       setError('Failed to delete todo');
-      console.error(err);
+      if (process.env.NODE_ENV !== 'test') {
+        console.error(err);
+      }
     }
   };
 
@@ -81,29 +91,32 @@ function TodoList() {
       setEditTitle('');
     } catch (err) {
       setError('Failed to update todo');
-      console.error(err);
+      if (process.env.NODE_ENV !== 'test') {
+        console.error(err);
+      }
     }
   };
 
-  if (loading) return <div style={styles.loading}>Loading...</div>;
+  if (loading) return <div style={styles.loading} data-testid="loading">Loading...</div>;
 
   return (
     <div style={styles.container}>
       <h1 style={styles.title}>📝 Todo List</h1>
       
       {error && (
-        <div style={styles.error}>
+        <div style={styles.error} data-testid="error">
           ❌ Error: {error}
         </div>
       )}
 
-      <form onSubmit={handleCreateTodo} style={styles.form}>
+      <form onSubmit={handleCreateTodo} style={styles.form} data-testid="todo-form">
         <input
           type="text"
           placeholder="What needs to be done?"
           value={newTitle}
           onChange={(e) => setNewTitle(e.target.value)}
           style={styles.input}
+          data-testid="todo-input"
         />
         <input
           type="text"
@@ -111,27 +124,37 @@ function TodoList() {
           value={newDescription}
           onChange={(e) => setNewDescription(e.target.value)}
           style={styles.input}
+          data-testid="description-input"
         />
-        <button type="submit" style={styles.button}>
+        <button type="submit" style={styles.button} data-testid="add-button">
           ➕ Add Todo
         </button>
       </form>
 
-      <ul style={styles.list}>
+      <ul style={styles.list} data-testid="todo-list">
         {todos.map(todo => (
-          <li key={todo.id} style={styles.listItem}>
+          <li key={todo.id} style={styles.listItem} data-testid={`todo-item-${todo.id}`}>
             {editingId === todo.id ? (
-              <div style={styles.editContainer}>
+              <div style={styles.editContainer} data-testid={`edit-container-${todo.id}`}>
                 <input
                   type="text"
                   value={editTitle}
                   onChange={(e) => setEditTitle(e.target.value)}
                   style={styles.editInput}
+                  data-testid={`edit-input-${todo.id}`}
                 />
-                <button onClick={() => handleUpdateTodo(todo.id)} style={styles.saveButton}>
+                <button 
+                  onClick={() => handleUpdateTodo(todo.id)} 
+                  style={styles.saveButton}
+                  data-testid={`save-button-${todo.id}`}
+                >
                   💾 Save
                 </button>
-                <button onClick={() => setEditingId(null)} style={styles.cancelButton}>
+                <button 
+                  onClick={() => setEditingId(null)} 
+                  style={styles.cancelButton}
+                  data-testid={`cancel-button-${todo.id}`}
+                >
                   ❌ Cancel
                 </button>
               </div>
@@ -142,6 +165,7 @@ function TodoList() {
                   checked={todo.completed}
                   onChange={() => handleToggleTodo(todo.id)}
                   style={styles.checkbox}
+                  data-testid={`checkbox-${todo.id}`}
                 />
                 <div style={styles.todoText}>
                   <span style={{
@@ -162,10 +186,18 @@ function TodoList() {
                   )}
                 </div>
                 <div>
-                  <button onClick={() => handleStartEdit(todo)} style={styles.editButton}>
+                  <button 
+                    onClick={() => handleStartEdit(todo)} 
+                    style={styles.editButton}
+                    data-testid={`edit-button-${todo.id}`}
+                  >
                     ✏️ Edit
                   </button>
-                  <button onClick={() => handleDeleteTodo(todo.id)} style={styles.deleteButton}>
+                  <button 
+                    onClick={() => handleDeleteTodo(todo.id)} 
+                    style={styles.deleteButton}
+                    data-testid={`delete-button-${todo.id}`}
+                  >
                     🗑️ Delete
                   </button>
                 </div>
@@ -176,7 +208,7 @@ function TodoList() {
       </ul>
 
       {todos.length === 0 && !loading && (
-        <div style={styles.empty}>
+        <div style={styles.empty} data-testid="empty-state">
           🎉 No todos yet! Add one above.
         </div>
       )}

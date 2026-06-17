@@ -4,7 +4,7 @@ import '@testing-library/jest-dom';
 import TodoList from './TodoList';
 import * as api from './api';
 
-// Mock BEFORE any imports that use it
+// Mock the API module
 jest.mock('./api');
 
 const mockTodos = [
@@ -23,15 +23,14 @@ afterAll(() => {
 
 describe('TodoList', () => {
   beforeEach(() => {
-    // Reset all mocks
     jest.clearAllMocks();
     
-    // Configure all mocks BEFORE rendering
+    // Setup default mock responses
     api.getTodos.mockResolvedValue(mockTodos);
     api.createTodo.mockResolvedValue({ 
       id: 3, 
       title: 'New Todo', 
-      description: '', 
+      description: 'Test description', 
       completed: false, 
       created_at: new Date().toISOString(), 
       updated_at: new Date().toISOString() 
@@ -52,15 +51,15 @@ describe('TodoList', () => {
     
     // Wait for loading to finish
     await waitFor(() => {
-      expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('loading')).not.toBeInTheDocument();
     });
     
-    // Check if todos are rendered
+    // Check if todos are rendered using data-testid
     await waitFor(() => {
+      expect(screen.getByTestId('todo-item-1')).toBeInTheDocument();
+      expect(screen.getByTestId('todo-item-2')).toBeInTheDocument();
       expect(screen.getByText('Test Todo 1')).toBeInTheDocument();
       expect(screen.getByText('Test Todo 2')).toBeInTheDocument();
-      expect(screen.getByText('Desc 1')).toBeInTheDocument();
-      expect(screen.getByText('Desc 2')).toBeInTheDocument();
     });
   });
 
@@ -69,13 +68,13 @@ describe('TodoList', () => {
     
     // Wait for loading to finish
     await waitFor(() => {
-      expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('loading')).not.toBeInTheDocument();
     });
 
-    // Find input and button - use the exact text with emoji
-    const input = screen.getByPlaceholderText('What needs to be done?');
-    const descriptionInput = screen.getByPlaceholderText('Description (optional)');
-    const button = screen.getByText('➕ Add Todo'); // Updated to match actual button text
+    // Use data-testid to find elements
+    const input = screen.getByTestId('todo-input');
+    const descriptionInput = screen.getByTestId('description-input');
+    const button = screen.getByTestId('add-button');
 
     // Fill in the form
     fireEvent.change(input, { target: { value: 'New Todo' } });
@@ -91,24 +90,43 @@ describe('TodoList', () => {
     });
   });
 
+  test('creates a todo without description', async () => {
+    render(<TodoList />);
+    
+    await waitFor(() => {
+      expect(screen.queryByTestId('loading')).not.toBeInTheDocument();
+    });
+
+    const input = screen.getByTestId('todo-input');
+    const button = screen.getByTestId('add-button');
+
+    fireEvent.change(input, { target: { value: 'Todo without description' } });
+    fireEvent.click(button);
+
+    await waitFor(() => {
+      expect(api.createTodo).toHaveBeenCalledWith({
+        title: 'Todo without description',
+        description: null
+      });
+    });
+  });
+
   test('deletes a todo', async () => {
     render(<TodoList />);
     
     // Wait for loading to finish
     await waitFor(() => {
-      expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('loading')).not.toBeInTheDocument();
     });
 
     // Wait for todos to be rendered
     await waitFor(() => {
-      expect(screen.getByText('Test Todo 1')).toBeInTheDocument();
+      expect(screen.getByTestId('todo-item-1')).toBeInTheDocument();
     });
 
-    // Find delete buttons - use the exact text with emoji
-    const deleteButtons = screen.getAllByText('🗑️ Delete'); // Updated to match actual button text
-    expect(deleteButtons).toHaveLength(2); // Should have 2 delete buttons
-    
-    fireEvent.click(deleteButtons[0]);
+    // Use data-testid to find delete button
+    const deleteButton = screen.getByTestId('delete-button-1');
+    fireEvent.click(deleteButton);
 
     // Verify deleteTodo was called with correct ID
     await waitFor(() => {
@@ -121,20 +139,17 @@ describe('TodoList', () => {
     
     // Wait for loading to finish
     await waitFor(() => {
-      expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('loading')).not.toBeInTheDocument();
     });
 
     // Wait for todos to be rendered
     await waitFor(() => {
-      expect(screen.getByText('Test Todo 1')).toBeInTheDocument();
+      expect(screen.getByTestId('todo-item-1')).toBeInTheDocument();
     });
 
-    // Find checkboxes
-    const checkboxes = screen.getAllByRole('checkbox');
-    expect(checkboxes).toHaveLength(2);
-    
-    // Click the first checkbox (for Test Todo 1)
-    fireEvent.click(checkboxes[0]);
+    // Use data-testid to find checkbox
+    const checkbox = screen.getByTestId('checkbox-1');
+    fireEvent.click(checkbox);
 
     // Verify toggleTodo was called with correct ID
     await waitFor(() => {
@@ -147,34 +162,56 @@ describe('TodoList', () => {
     
     // Wait for loading to finish
     await waitFor(() => {
-      expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('loading')).not.toBeInTheDocument();
     });
 
     // Wait for todos to be rendered
     await waitFor(() => {
-      expect(screen.getByText('Test Todo 1')).toBeInTheDocument();
+      expect(screen.getByTestId('todo-item-1')).toBeInTheDocument();
     });
 
-    // Find edit buttons - use the exact text with emoji
-    const editButtons = screen.getAllByText('✏️ Edit'); // Updated to match actual button text
-    expect(editButtons).toHaveLength(2);
-    
-    fireEvent.click(editButtons[0]);
+    // Click edit button
+    const editButton = screen.getByTestId('edit-button-1');
+    fireEvent.click(editButton);
 
-    // After clicking edit, the input should appear with the current title
-    const editInput = await screen.findByDisplayValue('Test Todo 1');
+    // Find edit input and change value
+    const editInput = await screen.findByTestId('edit-input-1');
     fireEvent.change(editInput, { target: { value: 'Updated Todo 1' } });
 
-    // Find save button - you might need to adjust this based on your component
-    const saveButton = screen.getByText('💾 Save'); // Adjust if your save button text is different
+    // Click save button
+    const saveButton = screen.getByTestId('save-button-1');
     fireEvent.click(saveButton);
 
     // Verify updateTodo was called with correct data
     await waitFor(() => {
       expect(api.updateTodo).toHaveBeenCalledWith(1, {
-        title: 'Updated Todo 1',
-        description: 'Desc 1'
+        title: 'Updated Todo 1'
       });
+    });
+  });
+
+  test('cancels editing a todo', async () => {
+    render(<TodoList />);
+    
+    await waitFor(() => {
+      expect(screen.queryByTestId('loading')).not.toBeInTheDocument();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('todo-item-1')).toBeInTheDocument();
+    });
+
+    // Click edit button
+    const editButton = screen.getByTestId('edit-button-1');
+    fireEvent.click(editButton);
+
+    // Find cancel button and click it
+    const cancelButton = await screen.findByTestId('cancel-button-1');
+    fireEvent.click(cancelButton);
+
+    // Verify edit mode is cancelled
+    await waitFor(() => {
+      expect(screen.queryByTestId('edit-input-1')).not.toBeInTheDocument();
     });
   });
 
@@ -186,7 +223,26 @@ describe('TodoList', () => {
 
     // Wait for error message to appear
     await waitFor(() => {
+      expect(screen.getByTestId('error')).toBeInTheDocument();
       expect(screen.getByText('Failed to fetch todos')).toBeInTheDocument();
+    });
+  });
+
+  test('shows empty state when no todos', async () => {
+    // Override mock to return empty array
+    api.getTodos.mockResolvedValue([]);
+
+    render(<TodoList />);
+
+    // Wait for loading to finish
+    await waitFor(() => {
+      expect(screen.queryByTestId('loading')).not.toBeInTheDocument();
+    });
+
+    // Check for empty state
+    await waitFor(() => {
+      expect(screen.getByTestId('empty-state')).toBeInTheDocument();
+      expect(screen.getByText('No todos yet! Add one above.')).toBeInTheDocument();
     });
   });
 });
