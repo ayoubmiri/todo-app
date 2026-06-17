@@ -3,7 +3,6 @@ import { render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import App from './App';
 
-// Mock the entire API module
 jest.mock('./api', () => ({
   getTodos: jest.fn().mockResolvedValue([]),
   createTodo: jest.fn(),
@@ -17,16 +16,13 @@ import * as api from './api';
 test('renders todo list', async () => {
   render(<App />);
   
-  // Wait for loading to finish
+  // Wait for loading to finish - this handles the async updates
   await waitFor(() => {
     expect(screen.queryByTestId('loading')).not.toBeInTheDocument();
   });
   
-  // Now check for the title
   const title = screen.getByText(/Todo List/i);
   expect(title).toBeInTheDocument();
-  
-  // Verify the API was called
   expect(api.getTodos).toHaveBeenCalled();
 });
 
