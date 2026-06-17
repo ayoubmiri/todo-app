@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { getTodos, createTodo, updateTodo, deleteTodo, toggleTodo } from './api';
 
 function TodoList() {
-  // IMPORTANT: This MUST be initialized with an empty array []
+  ///// IMPORTANT: This MUST be initialized with an empty array []
   const [todos, setTodos] = useState([]);  // <-- Make sure this is []
   const [newTitle, setNewTitle] = useState('');
   const [newDescription, setNewDescription] = useState('');
