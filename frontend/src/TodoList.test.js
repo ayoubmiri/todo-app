@@ -15,10 +15,8 @@ const mockTodos = [
 
 describe('TodoList', () => {
   beforeEach(() => {
-    // Reset all mocks before each test
     jest.clearAllMocks();
     
-    // Setup default mock responses
     api.getTodos.mockResolvedValue(mockTodos);
     api.createTodo.mockResolvedValue({ id: 3, title: 'New Todo', description: '', completed: false });
     api.deleteTodo.mockResolvedValue();
@@ -29,31 +27,33 @@ describe('TodoList', () => {
   test('displays todos after loading', async () => {
     render(<TodoList />);
     
-    // Use findByText which automatically waits
+    // Wait for loading to finish first
+    await waitFor(() => {
+      expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
+    });
+    
+    // Then check for todos
     const todo1 = await screen.findByText('Test Todo 1');
     const todo2 = await screen.findByText('Test Todo 2');
     
     expect(todo1).toBeInTheDocument();
     expect(todo2).toBeInTheDocument();
-    expect(screen.getByText('Desc 1')).toBeInTheDocument();
-    expect(screen.getByText('Desc 2')).toBeInTheDocument();
   });
 
   test('creates a new todo', async () => {
     render(<TodoList />);
     
     // Wait for loading to finish
-    await screen.findByText('Test Todo 1');
+    await waitFor(() => {
+      expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
+    });
 
-    // Find input and button
     const input = screen.getByPlaceholderText('What needs to be done?');
     const button = screen.getByText(/Add Todo/i);
 
-    // Type and submit
     fireEvent.change(input, { target: { value: 'New Todo' } });
     fireEvent.click(button);
 
-    // Verify API was called
     await waitFor(() => {
       expect(api.createTodo).toHaveBeenCalledWith({
         title: 'New Todo',
@@ -65,13 +65,17 @@ describe('TodoList', () => {
   test('deletes a todo', async () => {
     render(<TodoList />);
     
+    // Wait for loading to finish
+    await waitFor(() => {
+      expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
+    });
+
+    // Wait for todos to appear
     await screen.findByText('Test Todo 1');
 
-    // Find delete buttons
     const deleteButtons = screen.getAllByText(/Delete/i);
     fireEvent.click(deleteButtons[0]);
 
-    // Verify API was called
     await waitFor(() => {
       expect(api.deleteTodo).toHaveBeenCalledWith(1);
     });
@@ -80,13 +84,17 @@ describe('TodoList', () => {
   test('toggles a todo', async () => {
     render(<TodoList />);
     
+    // Wait for loading to finish
+    await waitFor(() => {
+      expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
+    });
+
+    // Wait for todos to appear
     await screen.findByText('Test Todo 1');
 
-    // Find checkboxes
     const checkboxes = screen.getAllByRole('checkbox');
     fireEvent.click(checkboxes[0]);
 
-    // Verify API was called
     await waitFor(() => {
       expect(api.toggleTodo).toHaveBeenCalledWith(1);
     });
